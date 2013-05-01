@@ -13,4 +13,4 @@ current process
 
 ## Example
 
-  require('minilog').pipe(require('minilog-airbrake')({ api_key: 'xxxxxx' })); 
+    require('minilog').pipe(require('minilog-airbrake')({ api_key: 'xxxxxx' })); 
