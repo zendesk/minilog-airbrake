@@ -1,0 +1,31 @@
+{
+  "name": "minilog-airbrake",
+  "description": "Backend log consumer for minilog that sends errors to airbrake",
+  "version": "0.1.0",
+  "main": "index.js",
+  "dependencies": {
+    "airbrake": "*"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "chai": "*",
+    "chai-spies": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samshull/minilog-airbrake"
+  },
+  "author": {
+    "name": "Sam Shull",
+    "url": "http://www.google.com/profiles/brickysam26"
+  },
+  "keywords": [
+    "logging",
+    "sysadmin",
+    "tools",
+    "airbrake"
+  ],
+  "scripts": {
+    "test": "mocha tests/test.js"
+  }
+}
