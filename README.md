@@ -1,4 +1,4 @@
-# Airbrake for Minilog
+# Airbrake for [Minilog](https://github.com/mixu/minilog/)
 
 A consumer of Minilog events that sends event data of a minimum threshold to Airbrake.
 
