@@ -63,19 +63,26 @@ MinilogAirbrake.prototype._isFormatted = true;
 MinilogAirbrake.prototype.format = function(name, level, args) {
   if (this.options.errorThreshold > MinilogAirbrake.errorLevels[level]) return false;
 
-  // initiate a backtrace
-  Error.stackTraceLimit = this.options.stackTraceLimit || 20;
-  var error = new Error;
-  error.name = 'Trace';
-  Error.captureStackTrace(error, arguments.callee);
+  if(args[0] instanceof Error) {
 
-  this.errors.push({
-    message: args[0],
-    type: level,
-    component: name,
-    params: { data: JSON.stringify(args.slice(1))},
-    stack: error.stack,
-  });
+    this.errors.push(args[0]);
+
+  } else {
+
+    // initiate a backtrace
+    Error.stackTraceLimit = this.options.stackTraceLimit || 20;
+    var error = new Error;
+    error.name = 'Trace';
+    Error.captureStackTrace(error, arguments.callee);
+
+    this.errors.push({
+      message: args[0],
+      type: level,
+      component: name,
+      params: { data: JSON.stringify(args.slice(1))},
+      stack: error.stack,
+    });
+  }
 
   return name;
 };

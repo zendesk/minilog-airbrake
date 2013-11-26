@@ -64,6 +64,17 @@ describe('MinilogAirbrake', function() {
       expect(instance.airbrake.notify).to.have.been.called.once;
     });
 
+    it('should notify Airbrake when there is an error object', function() {
+      spyOn(instance.airbrake, 'notify', function(error, fn) {
+        expect(error instanceof Error).to.be.true;
+        expect(error.message).to.equal('bad bad error');
+        expect(fn).to.be.a('function');
+      });
+      instance.errors.push(new Error('bad bad error'));
+      instance.write();
+      expect(instance.airbrake.notify).to.have.been.called.once;
+    });
+
     it('should not notify Airbrake when there is not a formatted error', function() {
       spyOn(instance.airbrake, 'notify', function(){});
       instance.errors = [];
