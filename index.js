@@ -44,6 +44,11 @@ MinilogAirbrake.prototype.setup = function(options) {
   if (this.options.handleExceptions !== false) {
     this.airbrake.handleExceptions();
   }
+
+  // initiate a backtrace
+  if(this.options.stackTraceLimit) {
+    Error.stackTraceLimit = this.options.stackTraceLimit;
+  }
 };
 
 MinilogAirbrake.prototype.write = function(str) {
@@ -63,15 +68,27 @@ MinilogAirbrake.prototype._isFormatted = true;
 MinilogAirbrake.prototype.format = function(name, level, args) {
   if (this.options.errorThreshold > MinilogAirbrake.errorLevels[level]) return false;
 
-  if(args[0] instanceof Error) {
+  var error;
+  for(var i = 0 ; i < args.length ; i++) {
+    if(args[i] instanceof Error) {
+      error = args.splice(i, 1, args[i].message)[0];
+      break;
+    }
+  }
 
-    this.errors.push(args[0]);
+  if(error) {
+
+    this.errors.push({
+      message: args[0],
+      type: level,
+      component: name,
+      params: { data: JSON.stringify(args.slice(1)) },
+      stack: error.stack,
+    });
 
   } else {
 
-    // initiate a backtrace
-    Error.stackTraceLimit = this.options.stackTraceLimit || 20;
-    var error = new Error;
+    error = new Error();
     error.name = 'Trace';
     Error.captureStackTrace(error, arguments.callee);
 
@@ -79,7 +96,7 @@ MinilogAirbrake.prototype.format = function(name, level, args) {
       message: args[0],
       type: level,
       component: name,
-      params: { data: JSON.stringify(args.slice(1))},
+      params: { data: JSON.stringify(args.slice(1)) },
       stack: error.stack,
     });
   }

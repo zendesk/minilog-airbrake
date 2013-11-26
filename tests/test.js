@@ -137,5 +137,17 @@ describe('MinilogAirbrake', function() {
       expect(instance.errors[0]).to.have.property('params').to.have.property('data', '[{"data":"test"}]');
       expect(instance.errors[0]).to.have.property('stack');
     });
+
+    it('should add an object to the errors list with the appropriate properties', function() {
+      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
+
+      expect(instance.format('name', 'warn', [ 'message', new Error('foo') ])).to.equal('name');
+      expect(instance.errors.length).to.equal(1);
+      expect(instance.errors[0]).to.have.property('message', 'message');
+      expect(instance.errors[0]).to.have.property('type', 'warn');
+      expect(instance.errors[0]).to.have.property('component', 'name');
+      expect(instance.errors[0]).to.have.property('params').to.have.property('data', '["foo"]');
+      expect(instance.errors[0]).to.have.property('stack');
+    });
   });
 });
