@@ -3,8 +3,9 @@
   "description": "Backend log consumer for minilog that sends errors to airbrake",
   "version": "0.1.1",
   "main": "index.js",
+  "license": "MIT",
   "dependencies": {
-    "airbrake": "0.3.4"
+    "airbrake": ">=0.3.4"
   },
   "devDependencies": {
     "mocha": "*",
