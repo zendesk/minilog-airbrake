@@ -1,7 +1,7 @@
 {
   "name": "minilog-airbrake",
   "description": "Backend log consumer for minilog that sends errors to airbrake",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
