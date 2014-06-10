@@ -1,5 +1,7 @@
 # Airbrake for [Minilog](https://github.com/mixu/minilog/)
 
+[![Build Status](https://travis-ci.org/zendesk/minilog-airbrake.svg?branch=master)](https://travis-ci.org/zendesk/minilog-airbrake)
+
 A consumer of Minilog events that sends event data of a minimum threshold to Airbrake.
 
 Other options include:
