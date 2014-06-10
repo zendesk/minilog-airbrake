@@ -1,4 +1,5 @@
 var airbrake = require('airbrake');
+var Transform  = require('minilog').Transform;
 
 require('buffer').Buffer.prototype.toJSON = function() {
   return this.toString();
@@ -18,6 +19,8 @@ function MinilogAirbrake(options) {
   this.setup(options);
   return this;
 }
+
+Transform.mixin(MinilogAirbrake);
 
 MinilogAirbrake.errorLevels = { debug: 1, info: 2, warn: 3, error: 4 };
 
@@ -51,24 +54,13 @@ MinilogAirbrake.prototype.setup = function(options) {
   }
 };
 
-MinilogAirbrake.prototype.write = function(str) {
-  if (this.errors.length) {
-    this.airbrake.notify(this.errors.shift(), this.options.allowDeliveryToFail ? null : function(err) {});
+MinilogAirbrake.prototype.write = function(name, level, args) {
+  if (this.options.errorThreshold > MinilogAirbrake.errorLevels[level]) {
+    this.emit(name, level, args); //pass-through
+    return;
   }
-};
 
-MinilogAirbrake.prototype.end = function() {
-  while (this.errors.length) {
-    this.write();
-  }
-};
-
-MinilogAirbrake.prototype._isFormatted = true;
-
-MinilogAirbrake.prototype.format = function(name, level, args) {
-  if (this.options.errorThreshold > MinilogAirbrake.errorLevels[level]) return false;
-
-  var error;
+  var error, notification;
   for(var i = 0 ; i < args.length ; i++) {
     if(args[i] instanceof Error) {
       error = args.splice(i, 1, args[i].message)[0];
@@ -78,13 +70,13 @@ MinilogAirbrake.prototype.format = function(name, level, args) {
 
   if(error) {
 
-    this.errors.push({
+    notification = {
       message: args[0],
       type: level,
       component: name,
       params: { data: JSON.stringify(args.slice(1)) },
       stack: error.stack,
-    });
+    };
 
   } else {
 
@@ -92,16 +84,20 @@ MinilogAirbrake.prototype.format = function(name, level, args) {
     error.name = 'Trace';
     Error.captureStackTrace(error, arguments.callee);
 
-    this.errors.push({
+    notification = {
       message: args[0],
       type: level,
       component: name,
       params: { data: JSON.stringify(args.slice(1)) },
       stack: error.stack,
-    });
+    };
   }
 
-  return name;
+  if (notification) {
+    this.airbrake.notify(notification, this.options.allowDeliveryToFail ? null : function(err) {});
+  }
+
+  this.emit(name, level, args);
 };
 
-module.exports = exports = MinilogAirbrake
+module.exports = exports = MinilogAirbrake;

@@ -5,7 +5,8 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "airbrake": ">=0.3.4"
+    "airbrake": ">=0.3.4",
+    "minilog": "2.0.5"
   },
   "devDependencies": {
     "mocha": "*",

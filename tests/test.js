@@ -54,100 +54,89 @@ describe('MinilogAirbrake', function() {
   });
 
   describe('#write', function() {
-    it('should notify Airbrake when there is a formatted error', function() {
-      spyOn(instance.airbrake, 'notify', function(error, fn) {
-        expect(error).to.deep.equal({ message: 'Hello' });
+    it('should notify Airbrake when there is a unformatted error', function() {
+      var spy = spyOn(instance.airbrake, 'notify', function(error, fn) {
+        expect(error.message).to.deep.equal('Hello');
         expect(fn).to.be.a('function');
       });
-      instance.errors.push({ message: 'Hello' });
-      instance.write();
+      instance.write('name','error', ['Hello']);
       expect(instance.airbrake.notify).to.have.been.called.once;
+      spy.restore();
     });
 
     it('should notify Airbrake when there is an error object', function() {
-      spyOn(instance.airbrake, 'notify', function(error, fn) {
-        expect(error instanceof Error).to.be.true;
+      var spy = spyOn(instance.airbrake, 'notify', function(error, fn) {
         expect(error.message).to.equal('bad bad error');
         expect(fn).to.be.a('function');
       });
-      instance.errors.push(new Error('bad bad error'));
-      instance.write();
+      instance.write('name', 'error',[ new Error('bad bad error') ]);
       expect(instance.airbrake.notify).to.have.been.called.once;
-    });
-
-    it('should not notify Airbrake when there is not a formatted error', function() {
-      spyOn(instance.airbrake, 'notify', function(){});
-      instance.errors = [];
-      instance.write();
-      expect(instance.airbrake.notify).not.to.have.been.called.once;
+      spy.restore();
     });
 
     it('should not pass a callback function when the allowDeliveryToFail option is true', function() {
-      spyOn(instance.airbrake, 'notify', function(error, fn) {
-        expect(error).to.deep.equal({ message: 'Hello' });
+      var spy = spyOn(instance.airbrake, 'notify', function(error, fn) {
+        expect(error.message).to.deep.equal('Hello');
         expect(fn).not.to.be.a('function');
       });
       instance.options.allowDeliveryToFail = true;
-      instance.errors.push({ message: 'Hello' });
-      instance.write();
+      instance.write('name','error', ['Hello']);
       expect(instance.airbrake.notify).to.have.been.called.once;
+      spy.restore();
     });
-  });
 
-  describe('#end', function() {
-    it('should call #write while there are errors that have not been sent to Airbrake', function() {
-      var called = 0;
-      spyOn(instance, 'write', function() {
-        expect(instance.errors.length).to.be.greaterThan(0);
-        called++;
-        instance.errors.shift();
+    it('should return without notifying if the level argument is lower than the errorThreshold', function() {
+      var spy = spyOn(instance.airbrake, 'notify');
+      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
+      instance.write('name', 'info', [ 'message', { data: 1 } ]);
+      expect(instance.airbrake.notify).not.to.have.been.called.once;
+      spy.restore();
+    });
+
+    it('should notify if the level argument is greater than the errorThreshold', function() {
+      var spy = spyOn(instance.airbrake, 'notify');
+      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
+      instance.write('name', 'error', [ 'message', { data: 1 } ]);
+      expect(instance.airbrake.notify).to.have.been.called.once;
+      spy.restore();
+    });
+
+    it('should notify if the level argument is equal to the errorThreshold', function() {
+      var spy = spyOn(instance.airbrake, 'notify');
+      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
+      instance.write('name', 'warn', [ 'message', { data: 1 } ]);
+      expect(instance.airbrake.notify).to.have.been.called.once;
+      spy.restore();
+    });
+
+    it('should notify with the appropriate info', function() {
+      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
+      var data = new Buffer('test');
+      var spy = spyOn(instance.airbrake, 'notify', function(error, fn) {
+        expect(error.message).to.equal('message');
+        expect(error.type).to.equal('warn');
+        expect(error.component).to.equal('name');
+        expect(error.params).to.have.property('data', JSON.stringify([data]));
+        expect(error).to.have.property('stack');
+        expect(fn).to.be.a('function');
       });
-      instance.errors = [ { message: 'First' }, { message: 'Second' }, { message: 'Third' } ];
-      instance.end();
-      expect(called).to.equal(3);
-    });
-  });
-
-  describe('#format', function() {
-    it('should return false if the level argument is lower than the errorThreshold', function() {
-      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
-      expect(instance.format('name', 'info', [ 'message', { data: 1 } ])).to.be.false;
-      expect(instance.errors.length).to.equal(0);
-    });
-
-    it('should return the name if the level argument is greater than the errorThreshold', function() {
-      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
-      expect(instance.format('name', 'error', [ 'message', { data: 1 } ])).to.equal('name');
-      expect(instance.errors.length).to.equal(1);
-    });
-
-    it('should return the name if the level argument is equal to the errorThreshold', function() {
-      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
-      expect(instance.format('name', 'warn', [ 'message', { data: 1 } ])).to.equal('name');
-      expect(instance.errors.length).to.equal(1);
+      instance.write('name', 'warn', [ 'message', data ]);
+      spy.restore();
     });
 
     it('should add an object to the errors list with the appropriate properties', function() {
       instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
-      expect(instance.format('name', 'warn', [ 'message', { data: new Buffer('test') } ])).to.equal('name');
-      expect(instance.errors.length).to.equal(1);
-      expect(instance.errors[0]).to.have.property('message', 'message');
-      expect(instance.errors[0]).to.have.property('type', 'warn');
-      expect(instance.errors[0]).to.have.property('component', 'name');
-      expect(instance.errors[0]).to.have.property('params').to.have.property('data', '[{"data":"test"}]');
-      expect(instance.errors[0]).to.have.property('stack');
-    });
+      var spy = spyOn(instance.airbrake, 'notify', function(error, fn) {
+        expect(error.message).to.equal('message');
+        expect(error.type).to.equal('warn');
+        expect(error.component).to.equal('name');
+        expect(error).to.have.property('params').to.have.property('data', '["foo"]');
+        expect(error).to.have.property('stack');
+        expect(fn).to.be.a('function');
+      });
 
-    it('should add an object to the errors list with the appropriate properties', function() {
-      instance.options.errorThreshold = MinilogAirbrake.errorLevels.warn;
-
-      expect(instance.format('name', 'warn', [ 'message', new Error('foo') ])).to.equal('name');
-      expect(instance.errors.length).to.equal(1);
-      expect(instance.errors[0]).to.have.property('message', 'message');
-      expect(instance.errors[0]).to.have.property('type', 'warn');
-      expect(instance.errors[0]).to.have.property('component', 'name');
-      expect(instance.errors[0]).to.have.property('params').to.have.property('data', '["foo"]');
-      expect(instance.errors[0]).to.have.property('stack');
+      instance.write('name', 'warn', [ 'message', new Error('foo') ]);
+      spy.restore();
     });
   });
 });
