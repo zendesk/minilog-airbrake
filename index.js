@@ -56,7 +56,7 @@ MinilogAirbrake.prototype.setup = function(options) {
 
 MinilogAirbrake.prototype.write = function(name, level, args) {
   if (this.options.errorThreshold > MinilogAirbrake.errorLevels[level]) {
-    this.emit(name, level, args); //pass-through
+    this.emit('item', name, level, args); //pass-through
     return;
   }
 
@@ -97,7 +97,7 @@ MinilogAirbrake.prototype.write = function(name, level, args) {
     this.airbrake.notify(notification, this.options.allowDeliveryToFail ? null : function(err) {});
   }
 
-  this.emit(name, level, args);
+  this.emit('item', name, level, args);
 };
 
 module.exports = exports = MinilogAirbrake;
